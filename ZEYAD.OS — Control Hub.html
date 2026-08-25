@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#top -->
+<html lang="en" class="no-webgl" style="scroll-behavior: smooth;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>ZEYAD.OS — Control Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./ZEYAD.OS — Control Hub_files/css2" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS  (unchanged from approved v1)
+=============================================================== */
+:root{
+  --void:#050706;
+  --void-2:#090c0a;
+  --panel:#0b0f0d;
+  --panel-2:#0f1512;
+  --line: rgba(233,242,236,0.10);
+  --line-strong: rgba(233,242,236,0.20);
+  --ink:#e9f2ec;
+  --ink-dim:#8ea296;
+  --ink-faint:#4d5a53;
+  --green:#3dffa0;
+  --green-2:#1e8f5c;
+  --green-dim: rgba(61,255,160,0.14);
+  --glow: rgba(61,255,160,0.55);
+  --f-pixel:'Press Start 2P', 'Silkscreen', monospace;
+  --f-label:'Silkscreen', 'Press Start 2P', monospace;
+  --f-mono:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --radius:2px;
+  --ease: cubic-bezier(.22,.9,.28,1);
+}
+
+/* ============================================================
+   RESET / BASE
+=============================================================== */
+*,*::before,*::after{box-sizing:border-box;}
+html{background:var(--void); scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--f-mono);
+  font-size:15px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,svg{display:block; max-width:100%;}
+a{color:inherit;}
+::selection{background:var(--green); color:#03140b;}
+h1,h2,h3,h4,p,ul,ol{margin:0;}
+button{font-family:inherit; cursor:pointer;}
+
+::-webkit-scrollbar{width:10px;}
+::-webkit-scrollbar-track{background:var(--void);}
+::-webkit-scrollbar-thumb{background:var(--green-2); border:2px solid var(--void);}
+
+/* ============================================================
+   LAYERED BACKGROUND SYSTEM
+=============================================================== */
+#webgl-bg{ position:fixed; inset:0; width:100%; height:100%; z-index:0; display:block; }
+.no-webgl #webgl-bg{display:none;}
+.no-webgl body{
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(61,255,160,0.08), transparent 60%),
+    linear-gradient(var(--void-2), var(--void));
+}
+.noise-grid{
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(61,255,160,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61,255,160,0.05) 1px, transparent 1px);
+  background-size:36px 36px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 20%, black 0%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 20%, black 0%, transparent 75%);
+}
+.scanlines{
+  position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.5;
+  background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode:overlay;
+}
+.vignette{
+  position:fixed; inset:0; z-index:2; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 30%, transparent 35%, rgba(0,0,0,0.72) 100%);
+}
+
+/* ============================================================
+   HUD
+=============================================================== */
+.hud{ position:fixed; top:0; left:0; right:0; z-index:40; pointer-events:none; }
+.hud__bar{height:2px; background:var(--green); width:0%; box-shadow:0 0 8px var(--glow); transition:width .05s linear;}
+.hud__row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 18px; font-family:var(--f-label); font-size:10px; letter-spacing:.06em; color:var(--ink-dim);
+}
+.hud__row span b{color:var(--green); font-weight:400;}
+@media (max-width:640px){ .hud__row{display:none;} }
+
+.reticle{
+  position:fixed; width:18px; height:18px; z-index:60; pointer-events:none;
+  transform:translate(-50%,-50%); mix-blend-mode:screen;
+}
+.reticle::before,.reticle::after{content:'';position:absolute;border-color:var(--green);border-style:solid;}
+.reticle::before{top:0;left:0;width:7px;height:7px;border-width:1.5px 0 0 1.5px;}
+.reticle::after{bottom:0;right:0;width:7px;height:7px;border-width:0 1.5px 1.5px 0;}
+@media (pointer:coarse){ .reticle{display:none;} }
+
+/* ============================================================
+   BOOT LOADER
+=============================================================== */
+.boot{
+  position:fixed; inset:0; z-index:100; background:var(--void);
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  transition:opacity .5s var(--ease), visibility .5s var(--ease);
+}
+.boot.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+.boot__title{font-family:var(--f-pixel); font-size:11px; color:var(--green); letter-spacing:.08em; text-shadow:0 0 12px var(--glow);}
+.boot__track{width:220px; height:6px; border:1px solid var(--line-strong); background:var(--void-2); position:relative; overflow:hidden;}
+.boot__fill{position:absolute; inset:0; width:0%; background:var(--green); box-shadow:0 0 10px var(--glow); animation:bootfill 1.1s var(--ease) forwards;}
+@keyframes bootfill{ to{ width:100%; } }
+.boot__hint{font-size:10px; color:var(--ink-faint); font-family:var(--f-label);}
+
+/* ============================================================
+   LOGIN GATE (new)
+=============================================================== */
+.login-gate{
+  position:fixed; inset:0; z-index:70; background:var(--void);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  transition:opacity .4s var(--ease), visibility .4s var(--ease);
+}
+.login-gate.hidden{opacity:0; visibility:hidden; pointer-events:none;}
+.login-gate__panel{
+  width:100%; max-width:380px; border:1px solid var(--line-strong); background:var(--panel);
+  padding:30px 26px; position:relative;
+}
+.login-gate__panel::before,.login-gate__panel::after{
+  content:''; position:absolute; width:20px; height:20px; border-color:var(--green); border-style:solid; opacity:.8;
+}
+.login-gate__panel::before{top:-1px; left:-1px; border-width:2px 0 0 2px;}
+.login-gate__panel::after{bottom:-1px; right:-1px; border-width:0 2px 2px 0;}
+.login-gate__tag{font-family:var(--f-label); font-size:11px; color:var(--green); letter-spacing:.12em; margin-bottom:16px;}
+.login-gate__title{font-family:var(--f-pixel); font-size:14px; line-height:1.7; margin-bottom:26px; text-shadow:0 0 16px rgba(61,255,160,0.25);}
+.login-gate__row{display:flex; flex-direction:column; gap:12px;}
+.login-gate__input{
+  background:var(--void-2); border:1px solid var(--line-strong); color:var(--ink);
+  font-family:var(--f-mono); font-size:14px; padding:12px 12px; letter-spacing:.1em;
+}
+.login-gate__input:focus{border-color:var(--green); outline:none;}
+.login-gate__error{display:none; margin-top:14px; font-family:var(--f-label); font-size:11px; color:var(--ink); letter-spacing:.08em;}
+.login-gate__error.show{display:block;}
+.login-gate__hint{margin-top:18px; font-size:10px; color:var(--ink-faint); font-family:var(--f-label);}
+
+/* ============================================================
+   LAYOUT PRIMITIVES
+=============================================================== */
+main{position:relative; z-index:3;}
+.zone{ position:relative; padding:96px 20px; max-width:1200px; margin:0 auto; }
+@media (max-width:640px){ .zone{padding:64px 16px;} }
+
+.eyebrow{
+  font-family:var(--f-label); font-size:11px; letter-spacing:.14em; color:var(--green);
+  display:flex; align-items:center; gap:10px; margin-bottom:18px; text-transform:uppercase;
+}
+.eyebrow::before{content:'';width:22px; height:1px; background:var(--green); box-shadow:0 0 6px var(--glow);}
+
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+.grid-4{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+@media (max-width:900px){ .grid-3{grid-template-columns:1fr 1fr;} .grid-4{grid-template-columns:1fr 1fr;} }
+@media (max-width:640px){ .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} }
+
+/* ============================================================
+   WINDOW PANEL COMPONENT
+=============================================================== */
+.win{ background:rgba(9,12,10,0.90); border:1px solid var(--line); position:relative; }
+.win__bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px; border-bottom:1px solid var(--line);
+  font-family:var(--f-label); font-size:10px; letter-spacing:.08em; color:var(--ink-dim);
+  user-select:none;
+}
+.win__bar-title{display:flex; align-items:center; gap:8px;}
+.win__dot{width:6px; height:6px; background:var(--green-2);}
+.win__ctrl{display:flex; align-items:center; gap:6px;}
+.win__ctrl span{width:9px; height:9px; border:1px solid var(--line-strong); display:inline-block;}
+.win__ctrl button{
+  width:14px; height:14px; border:1px solid var(--line-strong); background:transparent; color:var(--ink-dim);
+  font-size:9px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0;
+}
+.win__ctrl button:hover{border-color:var(--green); color:var(--green);}
+.win__add{
+  width:14px; height:14px; border:1px solid var(--green); background:transparent; color:var(--green);
+  font-size:10px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0;
+}
+.win__add:hover{background:var(--green); color:#03140b;}
+.win__body{padding:18px;}
+.win.collapsed .win__body{display:none;}
+
+/* ============================================================
+   TYPE
+=============================================================== */
+.h-pixel{font-family:var(--f-pixel); line-height:1.5;}
+.h-label{font-family:var(--f-label); letter-spacing:.04em;}
+.dim{color:var(--ink-dim);}
+.faint{color:var(--ink-faint);}
+.mono-num{font-variant-numeric:tabular-nums;}
+
+/* ============================================================
+   CHIPS / BUTTONS / MISC ATOMS
+=============================================================== */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 10px;
+  border:1px solid var(--line-strong); font-family:var(--f-label); font-size:10px;
+  color:var(--ink-dim); letter-spacing:.04em;
+}
+.chip b{color:var(--green); font-weight:400;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:12px 18px;
+  background:transparent; border:1px solid var(--green); color:var(--green);
+  font-family:var(--f-label); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  transition:background .2s, color .2s, box-shadow .2s;
+}
+.btn:hover{background:var(--green); color:#03140b; box-shadow:0 0 18px var(--glow);}
+.btn.ghost{border-color:var(--line-strong); color:var(--ink-dim);}
+.btn.ghost:hover{border-color:var(--green); color:var(--green); background:transparent; box-shadow:none;}
+
+.bar-track{height:6px; background:var(--void-2); border:1px solid var(--line); position:relative; overflow:hidden;}
+.bar-fill{position:absolute; inset:0; width:0%; background:var(--green); box-shadow:0 0 8px var(--glow); transition:width .6s var(--ease);}
+
+.icon-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border:1px solid var(--line-strong); color:var(--ink-dim);
+  font-size:11px; cursor:pointer; text-decoration:none; flex:none; margin-left:6px; background:transparent;
+}
+.icon-btn:hover{border-color:var(--green); color:var(--green);}
+.empty-state{ border:1px dashed var(--line-strong); padding:22px; text-align:center; color:var(--ink-faint); font-size:12px; }
+.confirm-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 0; border-bottom:1px solid var(--line); font-size:12px;
+}
+.status-badge{
+  font-size:9px; font-family:var(--f-label); letter-spacing:.06em; padding:3px 7px;
+  border:1px solid var(--line-strong); color:var(--ink-dim); display:inline-block;
+}
+.status-badge.is-active{color:var(--green); border-color:var(--green);}
+.status-badge.is-complete{color:#03140b; background:var(--green); border-color:var(--green);}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shake{animation:shake .4s ease;}
+
+/* ============================================================
+   SECTION 1 — ENTRY HUB
+=============================================================== */
+.hero{
+  min-height:100svh; display:flex; flex-direction:column; justify-content:center;
+  padding:120px 20px 60px; max-width:1200px; margin:0 auto; position:relative;
+}
+.hero__frame{position:relative; padding:26px 0;}
+.hero__frame::before,.hero__frame::after{
+  content:''; position:absolute; width:26px; height:26px; border-color:var(--green); border-style:solid; opacity:.8;
+}
+.hero__frame::before{top:0; left:-4px; border-width:2px 0 0 2px;}
+.hero__frame::after{bottom:0; right:-4px; border-width:0 2px 2px 0;}
+.hero__tag{font-family:var(--f-label); font-size:12px; letter-spacing:.16em; color:var(--green); margin-bottom:20px;}
+.hero__title{
+  font-family:var(--f-pixel); font-size:clamp(26px, 6vw, 58px); line-height:1.35; color:var(--ink);
+  text-shadow:0 0 22px rgba(61,255,160,0.28);
+}
+.hero__title em{font-style:normal; color:var(--green);}
+.hero__sub{margin-top:22px; max-width:560px; color:var(--ink-dim); font-size:15px;}
+.hero__status{display:flex; flex-wrap:wrap; gap:10px; margin-top:30px;}
+.hero__actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:34px;}
+.hero__scroll{
+  position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  font-family:var(--f-label); font-size:9px; letter-spacing:.12em; color:var(--ink-faint);
+}
+.hero__arrow{width:10px; height:16px; position:relative; animation:arrowbob 1.8s ease-in-out infinite;}
+.hero__arrow::before{content:''; position:absolute; inset:0; background:var(--green);
+  clip-path:polygon(50% 100%, 0 40%, 30% 40%, 30% 0, 70% 0, 70% 40%, 100% 40%);}
+@keyframes arrowbob{0%,100%{transform:translateY(0);opacity:.6;}50%{transform:translateY(6px);opacity:1;}}
+
+/* ============================================================
+   SECTION 2 — PROFILE
+=============================================================== */
+.avatar{
+  width:100%; aspect-ratio:1; border:1px solid var(--line-strong); background:var(--void-2);
+  display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+}
+.avatar::before{
+  content:''; position:absolute; inset:0;
+  background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size:14px 14px; opacity:.5;
+}
+.avatar__mark{font-family:var(--f-pixel); font-size:34px; color:var(--green); text-shadow:0 0 20px var(--glow); position:relative;}
+.profile__name{font-family:var(--f-label); font-size:20px; margin-top:16px;}
+.profile__role{color:var(--ink-dim); font-size:13px; margin-top:6px;}
+.profile__meta{display:flex; flex-direction:column; gap:4px; margin-top:14px; font-size:12px; color:var(--ink-faint);}
+
+.stat{border:1px solid var(--line); padding:16px; text-align:left;}
+.stat__value{font-family:var(--f-pixel); font-size:20px; color:var(--green);}
+.stat__label{margin-top:8px; font-size:10px; color:var(--ink-faint); font-family:var(--f-label); letter-spacing:.06em;}
+
+.about__lead{font-size:15px; color:var(--ink); max-width:640px;}
+
+/* weather / system time (new) */
+.weather{display:flex; align-items:center; gap:16px;}
+.weather__icon{font-size:28px; color:var(--green); flex:none; width:40px; text-align:center;}
+.weather__temp{font-family:var(--f-pixel); font-size:20px;}
+.weather__cond{font-size:11px; color:var(--ink-dim); margin-top:4px; font-family:var(--f-label);}
+.sys-time__clock{font-size:26px; color:var(--green); text-shadow:0 0 14px var(--glow);}
+.sys-time__date{font-size:11px; margin-top:8px; letter-spacing:.06em;}
+
+/* ============================================================
+   SECTION 3 — PRODUCTIVITY
+=============================================================== */
+.task{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); cursor:pointer; user-select:none; }
+.task:last-child{border-bottom:none;}
+.task__box{width:14px; height:14px; border:1px solid var(--line-strong); flex:none; position:relative;}
+.task.done .task__box{background:var(--green); border-color:var(--green); box-shadow:0 0 8px var(--glow);}
+.task__label{font-size:13px; flex:1;}
+.task.done .task__label{color:var(--ink-faint); text-decoration:line-through;}
+.task__tag{font-size:9px; font-family:var(--f-label); color:var(--ink-faint); border:1px solid var(--line); padding:2px 6px; flex:none;}
+.task-progress{margin-top:16px; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-faint); font-family:var(--f-label);}
+
+.cal-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+.cal-nav__label{font-family:var(--f-label); font-size:10px; color:var(--ink-dim); letter-spacing:.05em;}
+.cal-nav button{background:transparent; border:1px solid var(--line-strong); color:var(--ink-dim); width:22px; height:22px; font-size:11px;}
+.cal-nav button:hover{border-color:var(--green); color:var(--green);}
+.cal{width:100%; border-collapse:collapse; font-size:11px;}
+.cal caption{text-align:left; font-family:var(--f-label); font-size:11px; color:var(--ink-dim); margin-bottom:10px; letter-spacing:.05em;}
+.cal th{color:var(--ink-faint); font-weight:400; padding:4px 0; font-family:var(--f-label); font-size:9px;}
+.cal td{text-align:center; padding:6px 0; color:var(--ink-dim); position:relative; cursor:pointer;}
+.cal td.pad{color:transparent; cursor:default;}
+.cal td.today{color:#03140b; background:var(--green); box-shadow:0 0 8px var(--glow);}
+.cal td.selected{outline:1px solid var(--green);}
+.cal td.has-event::after{content:''; display:block; width:3px; height:3px; background:var(--green); margin:2px auto 0;}
+.cal-events{margin-top:14px; display:flex; flex-direction:column; gap:6px; font-size:11px;}
+.cal-events li{display:flex; justify-content:space-between; gap:8px; color:var(--ink-dim); list-style:none;}
+.cal-events li b{color:var(--green); font-weight:400; flex:none;}
+
+.note{background:var(--panel-2); border:1px solid var(--line); padding:12px; font-size:12.5px; color:var(--ink-dim); position:relative; cursor:pointer;}
+.note::before{content:''; position:absolute; top:0; left:0; width:16px; height:2px; background:var(--green);}
+.note__del{position:absolute; top:8px; right:8px;}
+.note__title{font-family:var(--f-label); font-size:12px; margin-bottom:6px; padding-right:24px; color:var(--ink);}
+.note__body{font-size:12px; color:var(--ink-dim); line-height:1.5;}
+.notes-stack{display:flex; flex-direction:column; gap:10px;}
+
+.goal{margin-bottom:16px;}
+.goal:last-child{margin-bottom:0;}
+.goal__top{display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;}
+.goal__top b{color:var(--green); font-weight:400; font-family:var(--f-label);}
+.goal__meta{display:flex; align-items:center; gap:10px; margin-top:8px; font-size:10px;}
+
+/* ============================================================
+   SECTION 4 — PROJECTS / STATS
+=============================================================== */
+.grid-4{align-items:stretch;}
+.project-card{
+  border:1px solid var(--line); background:rgba(9,12,10,0.9); padding:16px; position:relative;
+  transition:border-color .25s, transform .25s; display:flex; flex-direction:column;
+}
+.project-card:hover{border-color:var(--green); transform:translateY(-3px);}
+.project-card__thumb{
+  height:70px; margin-bottom:14px; border:1px solid var(--line);
+  background-image:linear-gradient(45deg, var(--green-dim) 25%, transparent 25%, transparent 50%, var(--green-dim) 50%, var(--green-dim) 75%, transparent 75%, transparent);
+  background-size:12px 12px; background-color:var(--void-2);
+}
+.project-card__title{font-family:var(--f-label); font-size:13px; margin-bottom:6px;}
+.project-card__desc{font-size:12px; color:var(--ink-faint); margin-bottom:12px;}
+.project-card__status{font-size:9px; font-family:var(--f-label); letter-spacing:.06em; padding:3px 7px; border:1px solid var(--line-strong); color:var(--ink-dim); display:inline-block;}
+.project-card__status.active{color:var(--green); border-color:var(--green);}
+.project-card--add{
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  border-style:dashed; color:var(--ink-faint); font-family:var(--f-label); font-size:11px; min-height:170px;
+}
+.project-card--add:hover{color:var(--green); border-color:var(--green);}
+
+.bar-chart{display:flex; align-items:flex-end; gap:10px; height:140px; padding-top:10px;}
+.bar-chart .bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end;}
+.bar-chart .bar{width:100%; background:linear-gradient(to top, var(--green), var(--green-2)); height:0%; box-shadow:0 0 10px var(--glow); transition:height .6s var(--ease);}
+.bar-chart .bar-label{font-size:9px; font-family:var(--f-label); color:var(--ink-faint); text-align:center;}
+.bar-count{font-family:var(--f-label); font-size:10px; color:var(--green);}
+
+.insight{border-left:2px solid var(--green); padding:4px 0 4px 12px; font-size:12.5px; color:var(--ink-dim); margin-bottom:12px;}
+.insight:last-child{margin-bottom:0;}
+
+/* ============================================================
+   SECTION 5 — ATMOSPHERE
+=============================================================== */
+.music{display:flex; align-items:center; gap:14px;}
+.music__eq{display:flex; align-items:flex-end; gap:3px; height:32px; flex:none;}
+.music__eq span{width:4px; background:var(--green); animation:eq 1s ease-in-out infinite; animation-play-state:paused;}
+.music.playing .music__eq span{animation-play-state:running;}
+.music__eq span:nth-child(1){height:40%; animation-duration:.9s;}
+.music__eq span:nth-child(2){height:100%; animation-duration:1.3s;}
+.music__eq span:nth-child(3){height:60%; animation-duration:.7s;}
+.music__eq span:nth-child(4){height:80%; animation-duration:1.1s;}
+.music__eq span:nth-child(5){height:35%; animation-duration:.8s;}
+@keyframes eq{0%,100%{transform:scaleY(.3);}50%{transform:scaleY(1);}}
+.music__info{flex:1; min-width:0;}
+.music__track{font-family:var(--f-label); font-size:13px;}
+.music__artist{font-size:11px; color:var(--ink-faint); margin-top:4px;}
+.music__ctrl-row{display:flex; gap:6px; flex:none;}
+.music__btn{width:30px; height:30px; border:1px solid var(--line-strong); background:transparent; color:var(--green);
+  display:flex; align-items:center; justify-content:center; flex:none; font-size:11px;}
+.music__btn:hover{border-color:var(--green);}
+.music__btn--play{width:34px; height:34px;}
+
+.mood-picker{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;}
+.mood-picker button{
+  padding:7px 10px; border:1px solid var(--line-strong); background:transparent; color:var(--ink-faint);
+  font-family:var(--f-label); font-size:10px;
+}
+.mood-picker button.sel,.mood-picker button:hover{border-color:var(--green); color:var(--green);}
+.mood-now{margin-top:14px; font-size:11px; color:var(--ink-dim);}
+.mood-now b{color:var(--green); font-weight:400;}
+.mood-history{margin-top:12px; display:flex; flex-direction:column; gap:6px; font-size:11px; max-height:110px; overflow-y:auto;}
+.mood-history li{list-style:none; display:flex; gap:10px; color:var(--ink-dim);}
+.mood-history li .t{color:var(--green-2); flex:none;}
+
+.log{font-size:12px; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;}
+.log li{list-style:none; display:flex; gap:10px; color:var(--ink-dim);}
+.log li .t{color:var(--green-2); flex:none; font-variant-numeric:tabular-nums; white-space:nowrap;}
+
+.qlinks{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+@media (max-width:480px){ .qlinks{grid-template-columns:repeat(2,1fr);} }
+.qlink-card{border:1px solid var(--line); padding:14px 8px; text-align:center; position:relative;}
+.qlink-card a{
+  display:flex; flex-direction:column; align-items:center; gap:8px; text-decoration:none;
+  color:var(--ink-dim); font-family:var(--f-label); font-size:9px; letter-spacing:.05em;
+}
+.qlink-card a:hover{color:var(--green);}
+.qlink-card a .glyph{font-family:var(--f-pixel); font-size:13px; color:var(--green);}
+.qlink-card__ctrl{display:flex; justify-content:center; gap:6px; margin-top:8px;}
+.qlinks__add{
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  border:1px dashed var(--line-strong); color:var(--ink-faint); font-family:var(--f-label); font-size:9px; padding:14px 8px;
+}
+.qlinks__add:hover{color:var(--green); border-color:var(--green);}
+
+/* ============================================================
+   SECTION 6 — FINAL CONTROL HUB
+=============================================================== */
+.control-strip{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
+  border:1px solid var(--line); padding:16px 20px;}
+.control-strip__actions{display:flex; gap:12px; flex-wrap:wrap;}
+.toggle{display:flex; align-items:center; gap:10px; font-family:var(--f-label); font-size:11px; color:var(--ink-dim);}
+.switch{width:38px; height:20px; border:1px solid var(--line-strong); position:relative; background:var(--void-2);}
+.switch::after{content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; background:var(--ink-faint); transition:transform .2s var(--ease), background .2s;}
+.switch.on{border-color:var(--green);}
+.switch.on::after{transform:translateX(17px); background:var(--green); box-shadow:0 0 6px var(--glow);}
+.footer-sign{margin-top:70px; padding-top:24px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  font-family:var(--f-label); font-size:10px; color:var(--ink-faint); letter-spacing:.05em;}
+
+/* ============================================================
+   MODAL (new)
+=============================================================== */
+.modal-root{
+  position:fixed; inset:0; z-index:85; display:flex; align-items:center; justify-content:center;
+  background:rgba(3,5,4,0.72); opacity:0; visibility:hidden; transition:opacity .2s var(--ease), visibility .2s var(--ease);
+  padding:20px;
+}
+.modal-root.open{opacity:1; visibility:visible;}
+.modal{width:100%; max-width:440px; background:var(--panel); border:1px solid var(--line-strong); max-height:88vh; display:flex; flex-direction:column;}
+.modal .win__ctrl button{width:20px; height:20px; font-size:12px;}
+.modal__body{padding:18px; overflow-y:auto;}
+.field{margin-bottom:14px;}
+.field label{display:block; font-family:var(--f-label); font-size:10px; letter-spacing:.05em; color:var(--ink-dim); margin-bottom:6px;}
+.field input, .field select, .field textarea{
+  width:100%; background:var(--void-2); border:1px solid var(--line-strong); color:var(--ink);
+  font-family:var(--f-mono); font-size:13px; padding:9px 10px;
+}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--green); outline:none;}
+.field textarea{resize:vertical; min-height:70px;}
+.modal__actions{display:flex; justify-content:flex-end; gap:10px; margin-top:6px;}
+
+/* ============================================================
+   REVEAL
+=============================================================== */
+[data-reveal]{visibility:hidden;}
+
+/* ============================================================
+   REDUCED MOTION
+=============================================================== */
+.reduce-motion *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+.reduce-motion .hero__arrow{animation:none;}
+.reduce-motion .reticle{display:none;}
+:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+</style>
+</head>
+<body style="">
+
+<canvas id="webgl-bg" aria-hidden="true"></canvas>
+<div class="noise-grid" aria-hidden="true"></div>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="reticle" id="reticle" aria-hidden="true" style="left: 1242.36px; top: 159.228px;"></div>
+
+<div class="hud" aria-hidden="true">
+  <div class="hud__bar" id="hudBar" style="width: 0%;"></div>
+  <div class="hud__row">
+    <span>SECTION: <b id="hudSection">ENTRY HUB</b></span>
+    <span>DEPTH: <b id="hudDepth" class="mono-num">0%</b></span>
+    <span>DATE: <b id="hudDate" class="mono-num">AUG 25 2026</b></span>
+    <span>LOCAL TIME: <b id="hudClock" class="mono-num">05:25 PM</b></span>
+  </div>
+</div>
+
+<div class="boot hidden" id="boot">
+  <div class="boot__title">INITIALIZING CONTROL HUB…</div>
+  <div class="boot__track"><div class="boot__fill"></div></div>
+  <div class="boot__hint">click to skip</div>
+</div>
+
+<div class="login-gate hidden" id="loginGate" role="dialog" aria-modal="true" aria-label="Login">
+  <div class="login-gate__panel" id="loginPanel">
+    <div class="login-gate__tag">[ ACCESS CONTROL ]</div>
+    <div class="login-gate__title">ZEYAD_TAMER<br>// PERSONAL SYSTEM</div>
+    <div class="login-gate__row">
+      <input type="password" id="loginPass" class="login-gate__input" placeholder="ENTER PASSWORD" autocomplete="off">
+      <button class="btn" id="loginBtn">Enter System</button>
+    </div>
+    <div class="login-gate__error" id="loginError">ACCESS DENIED</div>
+    <div class="login-gate__hint">Local prototype gate — not a substitute for real authentication.</div>
+  </div>
+</div>
+
+<div class="modal-root" id="modalRoot" aria-hidden="true"></div>
+
+<main id="top">
+
+  <!-- SECTION 1 — ENTRY HUB -->
+  <section class="zone hero" id="zone-1" data-label="ENTRY HUB">
+    <div class="hero__frame" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+      <div class="hero__tag">[ SYSTEM://BOOT ]</div>
+      <h1 class="hero__title">ZEYAD<em>.</em>OS<br>PERSONAL CONTROL HUB</h1>
+      <p class="hero__sub">Welcome back, <span id="heroName">Zeyad Tamer</span>. A single space for tasks, notes, goals and everything running quietly underneath the week.</p>
+      <div class="hero__status">
+        <div class="chip">STATUS <b>ONLINE</b></div>
+        <div class="chip">MODE <b>FOCUS</b></div>
+      </div>
+      <div class="hero__actions">
+        <a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#zone-3" class="btn">Enter System</a>
+        <a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#zone-4" class="btn ghost">View Projects</a>
+      </div>
+    </div>
+    <div class="hero__scroll"><span>SCROLL TO EXPAND</span><div class="hero__arrow"></div></div>
+  </section>
+
+  <!-- SECTION 2 — PROFILE & ABOUT -->
+  <section class="zone" id="zone-2" data-label="PROFILE">
+    <div class="eyebrow" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">01 / IDENTITY</div>
+    <div class="grid-3" style="align-items:start;">
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> profile.sys</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="avatar"><span class="avatar__mark" id="profileAvatarMark">ZT</span></div>
+          <div class="profile__name" id="profileName">Zeyad Tamer</div>
+          <div class="profile__role faint" id="profileOccupation">Add information</div>
+          <div class="profile__meta"><span class="faint" id="profileLocation">Add information</span></div>
+          <div class="chip-row" id="profileInterests" style="margin-top:14px;"><div class="chip faint">Add information</div></div>
+          <div id="profileStatusRow" style="display:none; margin-top:12px; font-size:12px; color:var(--ink-dim);">
+            <span id="profileStatus"></span>
+          </div>
+          <button class="btn ghost" id="editProfileBtn" style="margin-top:16px;">Edit Profile</button>
+        </div>
+      </div>
+
+      <div class="win" style="grid-column: span 2; translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;" data-reveal="">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> about.md</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <p class="about__lead faint" id="profileBio">Add information — click Edit Profile to write a short bio.</p>
+          <div class="grid-3" style="margin-top:22px; gap:14px;">
+            <div class="stat"><div class="stat__value" id="statActiveTasks">0</div><div class="stat__label">ACTIVE TASKS</div></div>
+            <div class="stat"><div class="stat__value" id="statCompletedTasks">0</div><div class="stat__label">COMPLETED TASKS</div></div>
+            <div class="stat"><div class="stat__value" id="statActiveProjects">0</div><div class="stat__label">ACTIVE PROJECTS</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> weather.sys</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div id="weatherBody"><div class="weather"><div class="weather__icon">☁</div><div class="weather__info"><div class="weather__temp">30°C</div><div class="weather__cond">PARTLY CLOUDY</div><div class="faint" style="margin-top:4px; font-size:11px;">Current location · H:31° L:26°</div></div></div></div>
+        </div>
+      </div>
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> system.time</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="sys-time__clock h-pixel" id="panelClock">05:25 PM</div>
+          <div class="sys-time__date dim" id="panelDate">AUG 25 2026</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 — PRODUCTIVITY ZONE -->
+  <section class="zone" id="zone-3" data-label="PRODUCTIVITY">
+    <div class="eyebrow" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">02 / PRODUCTIVITY</div>
+    <div class="grid-2">
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> tasks.exe</div>
+          <div class="win__ctrl"><button class="win__add" data-add="task" title="Add task">+</button><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div id="taskList"><div class="empty-state">No tasks yet — tap + to add one.</div></div>
+          <div class="task-progress">
+            <div class="bar-track" style="flex:1;"><div class="bar-fill" id="taskBar" style="width: 0%;"></div></div>
+            <span id="taskCount" class="mono-num">0/0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> calendar.sys</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="cal-nav">
+            <button id="calPrev" aria-label="previous month">‹</button>
+            <span class="cal-nav__label">TASKS · GOALS · PROJECTS WITH DUE DATES</span>
+            <button id="calNext" aria-label="next month">›</button>
+          </div>
+          <table class="cal" id="calTable"><caption>AUGUST 2026</caption><thead><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="" data-day="2026-08-01">1</td><td class="" data-day="2026-08-02">2</td></tr><tr><td class="" data-day="2026-08-03">3</td><td class="" data-day="2026-08-04">4</td><td class="" data-day="2026-08-05">5</td><td class="" data-day="2026-08-06">6</td><td class="" data-day="2026-08-07">7</td><td class="" data-day="2026-08-08">8</td><td class="" data-day="2026-08-09">9</td></tr><tr><td class="" data-day="2026-08-10">10</td><td class="" data-day="2026-08-11">11</td><td class="" data-day="2026-08-12">12</td><td class="" data-day="2026-08-13">13</td><td class="" data-day="2026-08-14">14</td><td class="" data-day="2026-08-15">15</td><td class="" data-day="2026-08-16">16</td></tr><tr><td class="" data-day="2026-08-17">17</td><td class="" data-day="2026-08-18">18</td><td class="" data-day="2026-08-19">19</td><td class="" data-day="2026-08-20">20</td><td class="" data-day="2026-08-21">21</td><td class="" data-day="2026-08-22">22</td><td class="" data-day="2026-08-23">23</td></tr><tr><td class="" data-day="2026-08-24">24</td><td class="today " data-day="2026-08-25">25</td><td class="" data-day="2026-08-26">26</td><td class="" data-day="2026-08-27">27</td><td class="" data-day="2026-08-28">28</td><td class="" data-day="2026-08-29">29</td><td class="" data-day="2026-08-30">30</td></tr><tr><td class="" data-day="2026-08-31">31</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td><td class="pad">0</td></tr></tbody></table>
+          <ul class="cal-events" id="calEvents"><li class="faint">Nothing due this month.</li></ul>
+        </div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> notes.txt</div>
+          <div class="win__ctrl"><button class="win__add" data-add="note" title="Add note">+</button><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body"><div class="notes-stack" id="notesList"><div class="empty-state">No notes yet — tap + to add one.</div></div></div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> goals.cfg</div>
+          <div class="win__ctrl"><button class="win__add" data-add="goal" title="Add goal">+</button><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body"><div id="goalsList"><div class="empty-state">No goals yet — tap + to add one.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4 — PROJECTS & STATS ZONE -->
+  <section class="zone" id="zone-4" data-label="PROJECTS">
+    <div class="eyebrow" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">03 / PROJECTS &amp; STATS</div>
+    <div class="projects-wrap">
+      <div class="grid-4" id="projectsList"><div class="empty-state" style="grid-column:1/-1;">No projects yet — add your first one.</div><div class="project-card project-card--add" data-add="project"><span>+ ADD PROJECT</span></div></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> stats.dat</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="bar-chart">
+            <div class="bar-wrap"><span class="bar-count" id="cntTasks">0</span><div class="bar" id="barTasks" style="height: 0%;"></div><div class="bar-label">TASKS</div></div>
+            <div class="bar-wrap"><span class="bar-count" id="cntNotes">0</span><div class="bar" id="barNotes" style="height: 0%;"></div><div class="bar-label">NOTES</div></div>
+            <div class="bar-wrap"><span class="bar-count" id="cntGoals">0</span><div class="bar" id="barGoals" style="height: 0%;"></div><div class="bar-label">GOALS</div></div>
+            <div class="bar-wrap"><span class="bar-count" id="cntProjects">0</span><div class="bar" id="barProjects" style="height: 0%;"></div><div class="bar-label">PROJECTS</div></div>
+            <div class="bar-wrap"><span class="bar-count" id="cntLinks">4</span><div class="bar" id="barLinks" style="height: 80%;"></div><div class="bar-label">LINKS</div></div>
+          </div>
+          <div class="dim" style="font-size:10px; font-family:var(--f-label); margin-top:12px;">ITEMS BY MODULE — LIVE</div>
+        </div>
+      </div>
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> insights.log</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body"><div id="insightsList"><div class="insight">0 active tasks on the board right now.</div><div class="insight">0 projects marked ACTIVE.</div><div class="insight">Productivity this session: 0% of tasks completed.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5 — PERSONAL ATMOSPHERE ZONE -->
+  <section class="zone" id="zone-5" data-label="ATMOSPHERE">
+    <div class="eyebrow" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">04 / ATMOSPHERE</div>
+    <div class="grid-2">
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> music.now</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="music" id="musicWidget">
+            <div class="music__ctrl-row">
+              <button class="music__btn" id="musicPrev" aria-label="previous track">◂◂</button>
+              <button class="music__btn music__btn--play" id="musicBtn" aria-label="play or pause">▶</button>
+              <button class="music__btn" id="musicNext" aria-label="next track">▸▸</button>
+            </div>
+            <div class="music__eq"><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="music__info">
+              <div class="music__track" id="musicTrack">Signal Drift</div>
+              <div class="music__artist" id="musicArtist">Low Orbit — ambient synth, 92bpm</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> mood.trk</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body">
+          <div class="mood-picker">
+            <button data-mood="FOCUSED">FOCUSED</button>
+            <button data-mood="CALM">CALM</button>
+            <button data-mood="HAPPY">HAPPY</button>
+            <button data-mood="TIRED">TIRED</button>
+            <button data-mood="BUSY">BUSY</button>
+            <button data-mood="CREATIVE">CREATIVE</button>
+          </div>
+          <div class="mood-now">CURRENT: <b id="moodNow">—</b></div>
+          <div class="faint" id="moodUpdated" style="font-size:10px; margin-top:4px;"></div>
+          <ul class="mood-history" id="moodHistory"><li class="faint">No history yet.</li></ul>
+        </div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> activity.log</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body"><ul class="log" id="activityLog"><li><span class="t">AUG 25, 05:24 PM</span><span>Signed in to Control Hub</span></li></ul></div>
+      </div>
+
+      <div class="win" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+        <div class="win__bar">
+          <div class="win__bar-title"><span class="win__dot"></span> quicklinks.sys</div>
+          <div class="win__ctrl"><span></span><span></span><button data-collapse="" aria-label="collapse">×</button></div>
+        </div>
+        <div class="win__body"><div class="qlinks" id="qlinksList"><div class="qlink-card"><a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#zone-3"><span class="glyph">▮</span>TASKS</a><div class="qlink-card__ctrl"><span class="icon-btn" data-edit="link" data-id="seed1">✎</span><span class="icon-btn" data-del="link" data-id="seed1">×</span></div></div><div class="qlink-card"><a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#zone-4"><span class="glyph">▦</span>PROJECTS</a><div class="qlink-card__ctrl"><span class="icon-btn" data-edit="link" data-id="seed2">✎</span><span class="icon-btn" data-del="link" data-id="seed2">×</span></div></div><div class="qlink-card"><a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#zone-5"><span class="glyph">▲</span>ACTIVITY</a><div class="qlink-card__ctrl"><span class="icon-btn" data-edit="link" data-id="seed3">✎</span><span class="icon-btn" data-del="link" data-id="seed3">×</span></div></div><div class="qlink-card"><a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#top"><span class="glyph">↑</span>TOP</a><div class="qlink-card__ctrl"><span class="icon-btn" data-edit="link" data-id="seed4">✎</span><span class="icon-btn" data-del="link" data-id="seed4">×</span></div></div><div class="qlinks__add" data-add="link">+ ADD LINK</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6 — FINAL CONTROL HUB -->
+  <section class="zone" id="zone-6" data-label="CONTROL HUB">
+    <div class="eyebrow" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">05 / CONTROL HUB</div>
+    <div class="grid-3" data-reveal="" style="translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;">
+      <div class="stat"><div class="stat__value" id="statTasksCompleted">0</div><div class="stat__label">TASKS COMPLETED</div></div>
+      <div class="stat"><div class="stat__value" id="statActiveProjects2">0</div><div class="stat__label">ACTIVE PROJECTS</div></div>
+      <div class="stat"><div class="stat__value" id="statProductivity">0%</div><div class="stat__label">PRODUCTIVITY</div></div>
+    </div>
+
+    <div class="control-strip" style="margin-top: 20px; translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;" data-reveal="">
+      <div class="toggle">
+        <span>REDUCE MOTION</span>
+        <button class="switch" id="motionSwitch" role="switch" aria-checked="false" aria-label="reduce motion"></button>
+      </div>
+      <div class="control-strip__actions">
+        <button class="btn ghost" id="logoutBtn">Log Out</button>
+        <a href="file:///C:/Users/LENOVO/Downloads/zeyad-os-control-hub.html#top" class="btn ghost">Return to Surface ↑</a>
+      </div>
+    </div>
+
+    <div class="footer-sign">
+      <span>ZEYAD.OS — PERSONAL CONTROL HUB</span>
+      <span>DATA STORED LOCALLY ON THIS SYSTEM</span>
+    </div>
+  </section>
+
+</main>
+
+<script src="./ZEYAD.OS — Control Hub_files/three.min.js.download"></script>
+<script src="./ZEYAD.OS — Control Hub_files/gsap.min.js.download"></script>
+<script src="./ZEYAD.OS — Control Hub_files/ScrollTrigger.min.js.download"></script>
+
+<script>
+(function(){
+'use strict';
+
+var reduceMotionPref = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var pointerFine = window.matchMedia && window.matchMedia('(pointer:fine)').matches;
+if(reduceMotionPref){ document.documentElement.classList.add('reduce-motion'); }
+
+/* =================================================================
+   STORE — persistent data layer.
+   Uses Claude's artifact window.storage when available (works when
+   this file is opened inside Claude.ai / Claude Desktop), and falls
+   back to plain localStorage when it isn't (works when this file is
+   opened directly as a standalone HTML file in any browser).
+================================================================== */
+var HAS_CLOUD_STORAGE = !!(window.storage && typeof window.storage.get === 'function');
+var NS = 'zt-dash:';
+var Store = {
+  save: async function(key, value){
+    try{
+      if(HAS_CLOUD_STORAGE){
+        await window.storage.set(NS+key, JSON.stringify(value), false);
+      } else if(window.localStorage){
+        window.localStorage.setItem(NS+key, JSON.stringify(value));
+      }
+    }catch(e){ console.warn('Store.save failed:', key, e); }
+  },
+  load: async function(key, fallback){
+    try{
+      if(HAS_CLOUD_STORAGE){
+        var res = await window.storage.get(NS+key, false);
+        return (res && res.value) ? JSON.parse(res.value) : fallback;
+      } else if(window.localStorage){
+        var raw = window.localStorage.getItem(NS+key);
+        return raw ? JSON.parse(raw) : fallback;
+      }
+    }catch(e){ return fallback; }
+    return fallback;
+  }
+};
+
+function uid(){ return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function relTime(iso){
+  if(!iso) return '';
+  var diff = Date.now() - new Date(iso).getTime();
+  var m = Math.round(diff/60000);
+  if(m<1) return 'just now';
+  if(m<60) return m+'m ago';
+  var h = Math.round(m/60);
+  if(h<24) return h+'h ago';
+  var d = Math.round(h/24);
+  return d+'d ago';
+}
+function fmtDateTime(iso){
+  try{
+    var d = new Date(iso);
+    var df = new Intl.DateTimeFormat('en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Africa/Cairo'});
+    return df.format(d).toUpperCase();
+  }catch(e){ return ''; }
+}
+
+/* =================================================================
+   STATE
+================================================================== */
+var DEFAULT_PROFILE = {displayName:'Zeyad Tamer', statusMessage:'', occupation:'', location:'', interests:'', bio:''};
+var DEFAULT_QUICKLINKS = [
+  {id:'seed1', title:'TASKS', url:'#zone-3', icon:'▮', createdAt:new Date().toISOString()},
+  {id:'seed2', title:'PROJECTS', url:'#zone-4', icon:'▦', createdAt:new Date().toISOString()},
+  {id:'seed3', title:'ACTIVITY', url:'#zone-5', icon:'▲', createdAt:new Date().toISOString()},
+  {id:'seed4', title:'TOP', url:'#top', icon:'↑', createdAt:new Date().toISOString()}
+];
+var PLAYLIST = [
+  {track:'Signal Drift', artist:'Low Orbit — ambient synth, 92bpm'},
+  {track:'Night Grid', artist:'Analog Ghost — synthwave, 104bpm'},
+  {track:'Static Bloom', artist:'Halftone — downtempo, 80bpm'}
+];
+
+var state = {
+  tasks:[], notes:[], goals:[], projects:[], quicklinks:[],
+  profile: Object.assign({}, DEFAULT_PROFILE),
+  mood:{current:'', updatedAt:null, history:[]},
+  activity:[], prefs:{weatherCity:null, musicIndex:0},
+  auth:{loggedIn:false}
+};
+var musicIndex = 0;
+var pendingDelete = {};
+
+/* =================================================================
+   ENTITY CONFIG — drives the generic modal + CRUD engine
+================================================================== */
+var ENTITY = {
+  task:{
+    key:'tasks', label:'Task',
+    fields:[
+      {key:'label', label:'Task', type:'text', required:true},
+      {key:'priority', label:'Priority', type:'select', options:['LOW','MEDIUM','HIGH'], default:'MEDIUM'},
+      {key:'due', label:'Due date', type:'date'}
+    ],
+    render:function(){ renderTasks(); },
+    logCreate:function(it){ return 'Task created: '+it.label; },
+    logUpdate:function(it){ return 'Task updated: '+it.label; },
+    logDelete:function(it){ return 'Task deleted: '+it.label; }
+  },
+  note:{
+    key:'notes', label:'Note',
+    fields:[
+      {key:'title', label:'Title', type:'text', required:true},
+      {key:'body', label:'Content', type:'textarea', required:true}
+    ],
+    render:function(){ renderNotes(); },
+    logCreate:function(it){ return 'Note created: '+it.title; },
+    logUpdate:function(it){ return 'Note edited: '+it.title; },
+    logDelete:function(it){ return 'Note deleted: '+it.title; }
+  },
+  goal:{
+    key:'goals', label:'Goal',
+    fields:[
+      {key:'label', label:'Goal', type:'text', required:true},
+      {key:'progress', label:'Progress %', type:'number', min:0, max:100, default:0},
+      {key:'status', label:'Status', type:'select', options:['NOT STARTED','ACTIVE','COMPLETED'], default:'NOT STARTED'},
+      {key:'due', label:'Target date', type:'date'}
+    ],
+    render:function(){ renderGoals(); },
+    logCreate:function(it){ return 'Goal added: '+it.label; },
+    logUpdate:function(it){ return 'Goal updated: '+it.label; },
+    logDelete:function(it){ return 'Goal deleted: '+it.label; }
+  },
+  project:{
+    key:'projects', label:'Project',
+    fields:[
+      {key:'title', label:'Title', type:'text', required:true},
+      {key:'description', label:'Description', type:'textarea'},
+      {key:'status', label:'Status', type:'select', options:['ACTIVE','REVIEW','COMPLETE'], default:'ACTIVE'},
+      {key:'progress', label:'Progress %', type:'number', min:0, max:100, default:0},
+      {key:'link', label:'Link (URL)', type:'text'},
+      {key:'due', label:'Deadline', type:'date'}
+    ],
+    render:function(){ renderProjects(); },
+    logCreate:function(it){ return 'Project created: '+it.title; },
+    logUpdate:function(it){ return 'Project updated: '+it.title; },
+    logDelete:function(it){ return 'Project deleted: '+it.title; }
+  },
+  link:{
+    key:'quicklinks', label:'Quick Link',
+    fields:[
+      {key:'title', label:'Title', type:'text', required:true},
+      {key:'url', label:'URL', type:'text', required:true},
+      {key:'icon', label:'Icon (1-2 chars)', type:'text'}
+    ],
+    render:function(){ renderQuickLinks(); },
+    logCreate:function(it){ return 'Quick link added: '+it.title; },
+    logUpdate:function(it){ return 'Quick link updated: '+it.title; },
+    logDelete:function(it){ return 'Quick link deleted: '+it.title; }
+  }
+};
+function getArr(type){ return state[ENTITY[type].key]; }
+function findItem(type,id){ return getArr(type).find(function(x){return x.id===id;}); }
+
+/* =================================================================
+   GENERIC MODAL
+================================================================== */
+var modalRoot = document.getElementById('modalRoot');
+function openModal(cfg){
+  var valuesInit = cfg.values || {};
+  var fieldsHtml = cfg.fields.map(function(f){
+    var val = valuesInit[f.key] !== undefined && valuesInit[f.key] !== null ? valuesInit[f.key] : (f.default!==undefined?f.default:'');
+    var id = 'f_'+f.key;
+    var inputHtml;
+    if(f.type==='textarea'){
+      inputHtml = '<textarea id="'+id+'" rows="4">'+escapeHtml(val)+'</textarea>';
+    } else if(f.type==='select'){
+      inputHtml = '<select id="'+id+'">'+f.options.map(function(o){
+        return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+o+'</option>';
+      }).join('')+'</select>';
+    } else if(f.type==='date'){
+      inputHtml = '<input type="date" id="'+id+'" value="'+(val||'')+'">';
+    } else if(f.type==='number'){
+      inputHtml = '<input type="number" id="'+id+'" min="'+(f.min!=null?f.min:'')+'" max="'+(f.max!=null?f.max:'')+'" value="'+(val!==''?val:(f.default!=null?f.default:0))+'">';
+    } else {
+      inputHtml = '<input type="text" id="'+id+'" value="'+escapeHtml(val)+'">';
+    }
+    return '<div class="field"><label for="'+id+'">'+f.label+(f.required?' *':'')+'</label>'+inputHtml+'</div>';
+  }).join('');
+
+  modalRoot.innerHTML =
+    '<div class="modal">'+
+      '<div class="win__bar"><div class="win__bar-title"><span class="win__dot"></span> '+escapeHtml(cfg.title)+'</div>'+
+        '<div class="win__ctrl"><button id="modalClose" aria-label="close">×</button></div></div>'+
+      '<div class="modal__body">'+fieldsHtml+
+        '<div class="modal__actions">'+
+          '<button class="btn ghost" id="modalCancel">Cancel</button>'+
+          '<button class="btn" id="modalSave">Save</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  modalRoot.classList.add('open');
+  modalRoot.setAttribute('aria-hidden','false');
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalSave').addEventListener('click', function(){
+    var values = {}; var missing = false;
+    cfg.fields.forEach(function(f){
+      var el = document.getElementById('f_'+f.key);
+      var v = el.value;
+      if(f.type==='number') v = (v==='') ? (f.default||0) : Number(v);
+      if(f.required && (v===''||v==null)) missing = true;
+      values[f.key] = v;
+    });
+    if(missing){
+      var sb = document.getElementById('modalSave');
+      sb.classList.add('shake');
+      setTimeout(function(){ sb.classList.remove('shake'); }, 400);
+      return;
+    }
+    cfg.onSave(values);
+  });
+  var firstInput = modalRoot.querySelector('input,textarea,select');
+  if(firstInput) firstInput.focus();
+}
+function closeModal(){
+  modalRoot.classList.remove('open');
+  modalRoot.setAttribute('aria-hidden','true');
+  modalRoot.innerHTML='';
+}
+
+function openEntityModal(type, id){
+  var cfg = ENTITY[type];
+  var existing = id ? findItem(type,id) : null;
+  openModal({
+    title:(existing?'Edit ':'Add ')+cfg.label,
+    fields:cfg.fields,
+    values: existing || {},
+    onSave:function(values){
+      if(existing){
+        Object.assign(existing, values, {updatedAt:new Date().toISOString()});
+        logActivity(cfg.logUpdate(existing));
+      } else {
+        var item = Object.assign({id:uid(), createdAt:new Date().toISOString()}, values);
+        getArr(type).unshift(item);
+        logActivity(cfg.logCreate(item));
+      }
+      Store.save(cfg.key, getArr(type));
+      cfg.render();
+      updateStats();
+      renderCalendar();
+      closeModal();
+    }
+  });
+}
+function requestDelete(type,id){ pendingDelete[type]=id; ENTITY[type].render(); }
+function cancelPendingDelete(){
+  Object.keys(pendingDelete).forEach(function(t){ if(pendingDelete[t]){ pendingDelete[t]=null; ENTITY[t].render(); } });
+}
+function performDelete(type,id){
+  var cfg = ENTITY[type];
+  var arr = getArr(type);
+  var idx = arr.findIndex(function(x){return x.id===id;});
+  if(idx>=0){
+    var it = arr[idx];
+    arr.splice(idx,1);
+    Store.save(cfg.key, arr);
+    logActivity(cfg.logDelete(it));
+  }
+  pendingDelete[type]=null;
+  cfg.render();
+  updateStats();
+  renderCalendar();
+}
+
+/* =================================================================
+   PROFILE
+================================================================== */
+var PROFILE_FIELDS = [
+  {key:'displayName', label:'Display name', type:'text', required:true},
+  {key:'statusMessage', label:'Status message', type:'text'},
+  {key:'occupation', label:'Occupation / role', type:'text'},
+  {key:'location', label:'Location', type:'text'},
+  {key:'interests', label:'Interests (comma-separated)', type:'text'},
+  {key:'bio', label:'Short bio', type:'textarea'}
+];
+function openProfileModal(){
+  openModal({
+    title:'Edit Profile', fields:PROFILE_FIELDS, values:state.profile,
+    onSave:function(values){
+      Object.assign(state.profile, values);
+      Store.save('profile', state.profile);
+      renderProfile();
+      logActivity('Profile updated');
+      closeModal();
+    }
+  });
+}
+function renderProfile(){
+  var p = state.profile || DEFAULT_PROFILE;
+  var name = p.displayName || 'Zeyad Tamer';
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('heroName').textContent = name;
+  var initials = name.trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0).toUpperCase();}).join('') || 'ZT';
+  document.getElementById('profileAvatarMark').textContent = initials;
+
+  var occEl = document.getElementById('profileOccupation');
+  occEl.textContent = p.occupation || 'Add information';
+  occEl.classList.toggle('faint', !p.occupation);
+
+  var locEl = document.getElementById('profileLocation');
+  locEl.textContent = p.location || 'Add information';
+  locEl.classList.toggle('faint', !p.location);
+
+  var statusRow = document.getElementById('profileStatusRow');
+  if(p.statusMessage){ statusRow.style.display='block'; document.getElementById('profileStatus').textContent = p.statusMessage; }
+  else{ statusRow.style.display='none'; }
+
+  var bioEl = document.getElementById('profileBio');
+  bioEl.textContent = p.bio || 'Add information — click Edit Profile to write a short bio.';
+  bioEl.classList.toggle('faint', !p.bio);
+
+  var list = (p.interests||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  document.getElementById('profileInterests').innerHTML = list.length
+    ? list.map(function(i){return '<div class="chip">'+escapeHtml(i)+'</div>';}).join('')
+    : '<div class="chip faint">Add information</div>';
+}
+
+/* =================================================================
+   TASKS
+================================================================== */
+function renderTasks(){
+  var el = document.getElementById('taskList');
+  var arr = state.tasks;
+  if(!arr.length){
+    el.innerHTML = '<div class="empty-state">No tasks yet — tap + to add one.</div>';
+  } else {
+    el.innerHTML = arr.map(function(t){
+      if(pendingDelete.task===t.id){
+        return '<div class="task confirm-row"><span>Delete "'+escapeHtml(t.label)+'"?</span>'+
+          '<div><button class="btn ghost" data-cancel-del>No</button> <button class="btn" data-confirm-del="task" data-id="'+t.id+'">Yes</button></div></div>';
+      }
+      return '<div class="task '+(t.done?'done':'')+'" data-toggle="'+t.id+'">'+
+        '<div class="task__box"></div>'+
+        '<div class="task__label">'+escapeHtml(t.label)+(t.due?' <span class="faint">— '+t.due+'</span>':'')+'</div>'+
+        '<div class="task__tag">'+t.priority+'</div>'+
+        '<span class="icon-btn" data-edit="task" data-id="'+t.id+'" title="Edit">✎</span>'+
+        '<span class="icon-btn" data-del="task" data-id="'+t.id+'" title="Delete">×</span>'+
+      '</div>';
+    }).join('');
+  }
+  var done = arr.filter(function(t){return t.done;}).length;
+  document.getElementById('taskBar').style.width = arr.length ? (done/arr.length*100)+'%' : '0%';
+  document.getElementById('taskCount').textContent = done+'/'+arr.length;
+}
+function toggleTask(id){
+  var t = findItem('task', id);
+  if(!t) return;
+  t.done = !t.done;
+  Store.save('tasks', state.tasks);
+  renderTasks();
+  updateStats();
+  logActivity((t.done?'Task completed: ':'Task marked incomplete: ')+t.label);
+}
+
+/* =================================================================
+   NOTES
+================================================================== */
+function renderNotes(){
+  var el = document.getElementById('notesList');
+  var arr = state.notes;
+  if(!arr.length){ el.innerHTML = '<div class="empty-state">No notes yet — tap + to add one.</div>'; return; }
+  el.innerHTML = arr.map(function(n){
+    if(pendingDelete.note===n.id){
+      return '<div class="note confirm-row"><span>Delete "'+escapeHtml(n.title)+'"?</span>'+
+        '<div><button class="btn ghost" data-cancel-del>No</button> <button class="btn" data-confirm-del="note" data-id="'+n.id+'">Yes</button></div></div>';
+    }
+    var body = n.body||'';
+    return '<div class="note" data-edit="note" data-id="'+n.id+'">'+
+      '<span class="icon-btn note__del" data-del="note" data-id="'+n.id+'" title="Delete">×</span>'+
+      '<div class="note__title">'+escapeHtml(n.title)+'</div>'+
+      '<div class="note__body">'+escapeHtml(body.slice(0,140))+(body.length>140?'…':'')+'</div>'+
+      '<div class="faint" style="margin-top:8px;font-size:10px;">'+fmtDateTime(n.updatedAt||n.createdAt)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* =================================================================
+   GOALS
+================================================================== */
+function statusClass(s){ if(s==='COMPLETED') return 'is-complete'; if(s==='ACTIVE') return 'is-active'; return ''; }
+function renderGoals(){
+  var el = document.getElementById('goalsList');
+  var arr = state.goals;
+  if(!arr.length){ el.innerHTML = '<div class="empty-state">No goals yet — tap + to add one.</div>'; return; }
+  el.innerHTML = arr.map(function(g){
+    if(pendingDelete.goal===g.id){
+      return '<div class="goal confirm-row"><span>Delete "'+escapeHtml(g.label)+'"?</span>'+
+        '<div><button class="btn ghost" data-cancel-del>No</button> <button class="btn" data-confirm-del="goal" data-id="'+g.id+'">Yes</button></div></div>';
+    }
+    return '<div class="goal">'+
+      '<div class="goal__top"><span>'+escapeHtml(g.label)+'</span><b>'+(g.progress||0)+'%</b></div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+(g.progress||0)+'%"></div></div>'+
+      '<div class="goal__meta"><span class="status-badge '+statusClass(g.status)+'">'+g.status+'</span>'+
+        (g.due?'<span class="faint">Due '+g.due+'</span>':'')+
+        '<span class="icon-btn" data-edit="goal" data-id="'+g.id+'">✎</span>'+
+        '<span class="icon-btn" data-del="goal" data-id="'+g.id+'">×</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* =================================================================
+   PROJECTS
+================================================================== */
+function renderProjects(){
+  var el = document.getElementById('projectsList');
+  var arr = state.projects;
+  var addCard = '<div class="project-card project-card--add" data-add="project"><span>+ ADD PROJECT</span></div>';
+  var body = '';
+  if(!arr.length){
+    body = '<div class="empty-state" style="grid-column:1/-1;">No projects yet — add your first one.</div>';
+  } else {
+    body = arr.map(function(p){
+      if(pendingDelete.project===p.id){
+        return '<div class="project-card confirm-row"><span>Delete "'+escapeHtml(p.title)+'"?</span>'+
+          '<div><button class="btn ghost" data-cancel-del>No</button> <button class="btn" data-confirm-del="project" data-id="'+p.id+'">Yes</button></div></div>';
+      }
+      var linkBtn = p.link ? '<a class="icon-btn" href="'+escapeHtml(p.link)+'" target="_blank" rel="noopener" title="Open link">↗</a>' : '';
+      return '<div class="project-card">'+
+        '<div class="project-card__thumb"></div>'+
+        '<div class="project-card__title">'+escapeHtml(p.title)+'</div>'+
+        (p.description?'<div class="project-card__desc">'+escapeHtml(p.description)+'</div>':'')+
+        '<div class="bar-track" style="margin-bottom:10px;"><div class="bar-fill" style="width:'+(p.progress||0)+'%"></div></div>'+
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto;">'+
+          '<span class="project-card__status '+(p.status==='ACTIVE'?'active':'')+'">'+p.status+'</span>'+
+          '<div>'+linkBtn+
+            '<span class="icon-btn" data-edit="project" data-id="'+p.id+'">✎</span>'+
+            '<span class="icon-btn" data-del="project" data-id="'+p.id+'">×</span>'+
+          '</div>'+
+        '</div>'+
+        (p.due?'<div class="faint" style="margin-top:8px;font-size:10px;">Deadline '+p.due+'</div>':'')+
+      '</div>';
+    }).join('');
+  }
+  el.innerHTML = body + addCard;
+}
+
+/* =================================================================
+   QUICK LINKS
+================================================================== */
+function renderQuickLinks(){
+  var el = document.getElementById('qlinksList');
+  var arr = state.quicklinks;
+  var addCard = '<div class="qlinks__add" data-add="link">+ ADD LINK</div>';
+  var body = '';
+  if(!arr.length){
+    body = '<div class="empty-state" style="grid-column:1/-1;">No quick links yet.</div>';
+  } else {
+    body = arr.map(function(l){
+      if(pendingDelete.link===l.id){
+        return '<div class="qlink-card confirm-row"><span>Delete "'+escapeHtml(l.title)+'"?</span>'+
+          '<div><button class="btn ghost" data-cancel-del>No</button> <button class="btn" data-confirm-del="link" data-id="'+l.id+'">Yes</button></div></div>';
+      }
+      var isExternal = /^https?:\/\//i.test(l.url);
+      return '<div class="qlink-card">'+
+        '<a href="'+escapeHtml(l.url)+'"'+(isExternal?' target="_blank" rel="noopener"':'')+'>'+
+          '<span class="glyph">'+escapeHtml(l.icon || (l.title.charAt(0)||'?').toUpperCase())+'</span>'+escapeHtml(l.title)+
+        '</a>'+
+        '<div class="qlink-card__ctrl">'+
+          '<span class="icon-btn" data-edit="link" data-id="'+l.id+'">✎</span>'+
+          '<span class="icon-btn" data-del="link" data-id="'+l.id+'">×</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  el.innerHTML = body + addCard;
+}
+
+/* =================================================================
+   MOOD
+================================================================== */
+function renderMood(){
+  var m = state.mood || {current:'', updatedAt:null, history:[]};
+  document.querySelectorAll('.mood-picker button').forEach(function(b){
+    b.classList.toggle('sel', b.dataset.mood===m.current);
+  });
+  document.getElementById('moodNow').textContent = m.current || '—';
+  document.getElementById('moodUpdated').textContent = m.updatedAt ? ('Updated '+relTime(m.updatedAt)) : '';
+  var hist = (m.history||[]).slice(0,5);
+  document.getElementById('moodHistory').innerHTML = hist.length
+    ? hist.map(function(h){ return '<li><span class="t">'+relTime(h.ts)+'</span><span>'+h.state+'</span></li>'; }).join('')
+    : '<li class="faint">No history yet.</li>';
+}
+function setMood(newState){
+  var now = new Date().toISOString();
+  state.mood.current = newState;
+  state.mood.updatedAt = now;
+  state.mood.history = state.mood.history || [];
+  state.mood.history.unshift({state:newState, ts:now});
+  state.mood.history = state.mood.history.slice(0,5);
+  Store.save('mood', state.mood);
+  renderMood();
+  logActivity('Mood set to '+newState);
+}
+
+/* =================================================================
+   ACTIVITY LOG
+================================================================== */
+function logActivity(text){
+  state.activity = state.activity || [];
+  state.activity.unshift({text:text, ts:new Date().toISOString()});
+  state.activity = state.activity.slice(0,25);
+  Store.save('activity', state.activity);
+  renderActivity();
+}
+function renderActivity(){
+  var el = document.getElementById('activityLog');
+  var arr = state.activity||[];
+  el.innerHTML = arr.length
+    ? arr.map(function(a){ return '<li><span class="t">'+fmtDateTime(a.ts)+'</span><span>'+escapeHtml(a.text)+'</span></li>'; }).join('')
+    : '<li class="faint">No activity yet.</li>';
+}
+
+/* =================================================================
+   MUSIC
+================================================================== */
+function renderMusic(){
+  var t = PLAYLIST[musicIndex];
+  document.getElementById('musicTrack').textContent = t.track;
+  document.getElementById('musicArtist').textContent = t.artist;
+}
+
+/* =================================================================
+   STATS
+================================================================== */
+function setText(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; }
+function setBar(barId,cntId,count){
+  var el = document.getElementById(barId);
+  if(el) el.style.height = Math.min(100,count*20)+'%';
+  setText(cntId, count);
+}
+function updateStats(){
+  var t=state.tasks||[], pr=state.projects||[], g=state.goals||[], n=state.notes||[], ql=state.quicklinks||[];
+  var doneT = t.filter(function(x){return x.done;}).length;
+  var activeProjects = pr.filter(function(x){return x.status!=='COMPLETE';}).length;
+  var productivity = t.length ? Math.round(doneT/t.length*100) : 0;
+
+  setText('statActiveTasks', t.length-doneT);
+  setText('statCompletedTasks', doneT);
+  setText('statActiveProjects', activeProjects);
+  setText('statTasksCompleted', doneT);
+  setText('statActiveProjects2', activeProjects);
+  setText('statProductivity', productivity+'%');
+
+  setBar('barTasks','cntTasks', t.length);
+  setBar('barNotes','cntNotes', n.length);
+  setBar('barGoals','cntGoals', g.length);
+  setBar('barProjects','cntProjects', pr.length);
+  setBar('barLinks','cntLinks', ql.length);
+
+  var lines = [
+    (t.length-doneT)+' active task'+((t.length-doneT)===1?'':'s')+' on the board right now.',
+    activeProjects+' project'+(activeProjects===1?'':'s')+' marked ACTIVE.',
+    'Productivity this session: '+productivity+'% of tasks completed.'
+  ];
+  document.getElementById('insightsList').innerHTML = lines.map(function(l){ return '<div class="insight">'+l+'</div>'; }).join('');
+}
+
+/* =================================================================
+   CALENDAR
+================================================================== */
+var calState = {year:null, month:null, selected:null};
+(function initCalState(){ var now=new Date(); calState.year=now.getFullYear(); calState.month=now.getMonth(); })();
+
+function collectDatedItems(){
+  var items = [];
+  (state.tasks||[]).forEach(function(t){ if(t.due) items.push({type:'TASK', label:t.label, date:t.due}); });
+  (state.goals||[]).forEach(function(g){ if(g.due) items.push({type:'GOAL', label:g.label, date:g.due}); });
+  (state.projects||[]).forEach(function(p){ if(p.due) items.push({type:'PROJECT', label:p.title, date:p.due}); });
+  return items;
+}
+function renderCalendar(){
+  var table = document.getElementById('calTable');
+  if(!table) return;
+  var year=calState.year, month=calState.month;
+  var now = new Date();
+  var isCurrentMonth = (year===now.getFullYear() && month===now.getMonth());
+  var monthName = new Date(year,month,1).toLocaleString('en-US',{month:'long'});
+  var first = new Date(year,month,1);
+  var startOffset = (first.getDay()+6)%7;
+  var daysInMonth = new Date(year,month+1,0).getDate();
+
+  var items = collectDatedItems();
+  var itemsByDay = {};
+  items.forEach(function(it){ (itemsByDay[it.date]=itemsByDay[it.date]||[]).push(it); });
+  function dayKey(d){ return year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+
+  var html = '<caption>'+monthName.toUpperCase()+' '+year+'</caption>';
+  html += '<thead><tr>'+['M','T','W','T','F','S','S'].map(function(d){return '<th>'+d+'</th>';}).join('')+'</tr></thead><tbody>';
+  var day=1;
+  var rows = Math.ceil((daysInMonth+startOffset)/7);
+  for(var r=0;r<rows;r++){
+    html+='<tr>';
+    for(var c=0;c<7;c++){
+      if((r===0&&c<startOffset)||day>daysInMonth){ html+='<td class="pad">0</td>'; }
+      else{
+        var key = dayKey(day);
+        var isToday = isCurrentMonth && day===now.getDate();
+        var hasEvent = !!itemsByDay[key];
+        var isSel = calState.selected===key;
+        html += '<td class="'+(isToday?'today ':'')+(hasEvent?'has-event ':'')+(isSel?'selected':'')+'" data-day="'+key+'">'+day+'</td>';
+        day++;
+      }
+    }
+    html+='</tr>';
+  }
+  html+='</tbody>';
+  table.innerHTML = html;
+  renderCalendarEvents(itemsByDay);
+}
+function renderCalendarEvents(itemsByDay){
+  var evList = document.getElementById('calEvents');
+  if(!itemsByDay){
+    itemsByDay = {};
+    collectDatedItems().forEach(function(it){ (itemsByDay[it.date]=itemsByDay[it.date]||[]).push(it); });
+  }
+  var keys;
+  var monthPrefix = calState.year+'-'+String(calState.month+1).padStart(2,'0');
+  if(calState.selected && itemsByDay[calState.selected]){ keys=[calState.selected]; }
+  else{ keys = Object.keys(itemsByDay).filter(function(k){ return k.indexOf(monthPrefix)===0; }).sort(); }
+  if(!keys.length){ evList.innerHTML = '<li class="faint">'+(calState.selected?'Nothing due this day.':'Nothing due this month.')+'</li>'; return; }
+  var rows = [];
+  keys.forEach(function(k){ itemsByDay[k].forEach(function(it){ rows.push('<li>'+it.type+': '+escapeHtml(it.label)+' <b>'+k+'</b></li>'); }); });
+  evList.innerHTML = rows.join('');
+}
+
+/* =================================================================
+   WEATHER (Open-Meteo — keyless)
+================================================================== */
+var WEATHER_CODES = {
+  0:['CLEAR','☀'],1:['MOSTLY CLEAR','☀'],2:['PARTLY CLOUDY','☁'],3:['OVERCAST','☁'],
+  45:['FOG','▓'],48:['FOG','▓'],
+  51:['DRIZZLE','☂'],53:['DRIZZLE','☂'],55:['DRIZZLE','☂'],
+  61:['RAIN','☂'],63:['RAIN','☂'],65:['HEAVY RAIN','☂'],
+  71:['SNOW','❄'],73:['SNOW','❄'],75:['HEAVY SNOW','❄'],
+  80:['SHOWERS','☂'],81:['SHOWERS','☂'],82:['SHOWERS','☂'],
+  95:['STORM','⚡'],96:['STORM','⚡'],99:['STORM','⚡']
+};
+function weatherLabel(code){ return WEATHER_CODES[code] || ['—','•']; }
+function renderWeatherLoading(msg){ document.getElementById('weatherBody').innerHTML = '<div class="dim" style="font-size:11px;">'+escapeHtml(msg)+'</div>'; }
+function renderWeatherError(){ document.getElementById('weatherBody').innerHTML = '<div class="faint" style="font-size:11px;">Weather unavailable right now.</div>'; }
+function renderWeatherManual(){
+  document.getElementById('weatherBody').innerHTML =
+    '<div class="dim" style="font-size:11px; margin-bottom:8px;">Location unavailable — search a city:</div>'+
+    '<div style="display:flex; gap:6px;"><input type="text" id="weatherCityInput" placeholder="City name" style="flex:1; background:var(--void-2); border:1px solid var(--line-strong); color:var(--ink); font-family:var(--f-mono); font-size:12px; padding:8px;">'+
+    '<button class="btn ghost" id="weatherCitySearch">Go</button></div>';
+  document.getElementById('weatherCitySearch').addEventListener('click', function(){
+    var v = document.getElementById('weatherCityInput').value.trim(); if(v) searchCityWeather(v);
+  });
+  document.getElementById('weatherCityInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ var v=e.target.value.trim(); if(v) searchCityWeather(v); }
+  });
+}
+function renderWeatherData(data, placeLabel){
+  var cur = data.current || {};
+  var daily = data.daily || {};
+  var wl = weatherLabel(cur.weather_code);
+  var hi = (daily.temperature_2m_max && daily.temperature_2m_max[0]!=null) ? Math.round(daily.temperature_2m_max[0]) : null;
+  var lo = (daily.temperature_2m_min && daily.temperature_2m_min[0]!=null) ? Math.round(daily.temperature_2m_min[0]) : null;
+  document.getElementById('weatherBody').innerHTML =
+    '<div class="weather"><div class="weather__icon">'+wl[1]+'</div><div class="weather__info">'+
+      '<div class="weather__temp">'+Math.round(cur.temperature_2m)+'°C</div>'+
+      '<div class="weather__cond">'+wl[0]+'</div>'+
+      '<div class="faint" style="margin-top:4px; font-size:11px;">'+escapeHtml(placeLabel)+(hi!=null?' · H:'+hi+'° L:'+lo+'°':'')+'</div>'+
+    '</div></div>';
+}
+async function fetchWeatherFor(lat, lon, placeLabel){
+  try{
+    renderWeatherLoading('Loading weather…');
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto';
+    var res = await fetch(url);
+    if(!res.ok) throw new Error('bad response');
+    var data = await res.json();
+    renderWeatherData(data, placeLabel);
+  }catch(e){ console.warn('weather fetch failed', e); renderWeatherError(); }
+}
+async function searchCityWeather(name){
+  try{
+    renderWeatherLoading('Searching…');
+    var res = await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(name)+'&count=1&language=en&format=json');
+    var data = await res.json();
+    if(!data.results || !data.results.length){ renderWeatherError(); return; }
+    var r = data.results[0];
+    var label = r.name+(r.country?', '+r.country:'');
+    state.prefs.weatherCity = {name:r.name, country:r.country, lat:r.latitude, lon:r.longitude};
+    Store.save('prefs', state.prefs);
+    fetchWeatherFor(r.latitude, r.longitude, label);
+  }catch(e){ console.warn('city search failed', e); renderWeatherError(); }
+}
+function initWeather(){
+  if(state.prefs && state.prefs.weatherCity){
+    var c = state.prefs.weatherCity;
+    fetchWeatherFor(c.lat, c.lon, c.name+(c.country?', '+c.country:''));
+    return;
+  }
+  if(!('geolocation' in navigator)){ renderWeatherManual(); return; }
+  renderWeatherLoading('Locating…');
+  navigator.geolocation.getCurrentPosition(
+    function(pos){ fetchWeatherFor(pos.coords.latitude, pos.coords.longitude, 'Current location'); },
+    function(){ renderWeatherManual(); },
+    {timeout:8000}
+  );
+}
+
+/* =================================================================
+   CLOCK / DATE — 12-hour format, Africa/Cairo
+================================================================== */
+function tickClock(){
+  try{
+    var now = new Date();
+    var tfmt = new Intl.DateTimeFormat('en-US', {hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Africa/Cairo'});
+    var dfmt = new Intl.DateTimeFormat('en-US', {month:'short',day:'2-digit',year:'numeric',timeZone:'Africa/Cairo'});
+    var timeStr = tfmt.format(now);
+    var dateStr = dfmt.format(now).toUpperCase().replace(',', '');
+    setText('hudClock', timeStr);
+    setText('hudDate', dateStr);
+    setText('panelClock', timeStr);
+    setText('panelDate', dateStr);
+  }catch(e){}
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* =================================================================
+   RENDER ALL
+================================================================== */
+function renderAll(){
+  renderProfile(); renderTasks(); renderNotes(); renderGoals(); renderProjects();
+  renderQuickLinks(); renderMood(); renderActivity(); renderMusic(); renderCalendar(); updateStats();
+}
+
+/* =================================================================
+   AUTH / LOGIN GATE
+================================================================== */
+var DASH_PASSWORD = '2307173';
+var loginGate = document.getElementById('loginGate');
+function showGate(show){ loginGate.classList.toggle('hidden', !show); }
+function tryLogin(){
+  var input = document.getElementById('loginPass');
+  if(input.value === DASH_PASSWORD){
+    state.auth = {loggedIn:true};
+    Store.save('auth', state.auth);
+    showGate(false);
+    input.value='';
+    document.getElementById('loginError').classList.remove('show');
+    logActivity('Signed in to Control Hub');
+  } else {
+    document.getElementById('loginError').classList.add('show');
+    document.getElementById('loginPanel').classList.add('shake');
+    setTimeout(function(){ document.getElementById('loginPanel').classList.remove('shake'); }, 400);
+  }
+}
+document.getElementById('loginBtn').addEventListener('click', tryLogin);
+document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') tryLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', function(){
+  state.auth = {loggedIn:false};
+  Store.save('auth', state.auth);
+  showGate(true);
+});
+document.getElementById('editProfileBtn').addEventListener('click', openProfileModal);
+
+/* =================================================================
+   MASTER CLICK DELEGATION
+================================================================== */
+document.addEventListener('click', function(e){
+  var moodBtn = e.target.closest('.mood-picker button');
+  if(moodBtn){ setMood(moodBtn.dataset.mood); return; }
+
+  var addBtn = e.target.closest('[data-add]');
+  if(addBtn){ openEntityModal(addBtn.dataset.add, null); return; }
+
+  var delBtn = e.target.closest('[data-del]');
+  if(delBtn){ requestDelete(delBtn.dataset.del, delBtn.dataset.id); return; }
+
+  var confirmDel = e.target.closest('[data-confirm-del]');
+  if(confirmDel){ performDelete(confirmDel.dataset.confirmDel, confirmDel.dataset.id); return; }
+
+  var cancelDel = e.target.closest('[data-cancel-del]');
+  if(cancelDel){ cancelPendingDelete(); return; }
+
+  var editBtn = e.target.closest('[data-edit]');
+  if(editBtn){ openEntityModal(editBtn.dataset.edit, editBtn.dataset.id); return; }
+
+  var toggleBtn = e.target.closest('[data-toggle]');
+  if(toggleBtn){ toggleTask(toggleBtn.dataset.toggle); return; }
+
+  var dayCell = e.target.closest('[data-day]');
+  if(dayCell){
+    var key = dayCell.dataset.day;
+    calState.selected = (calState.selected===key) ? null : key;
+    renderCalendar();
+    return;
+  }
+
+  var collapseBtn = e.target.closest('[data-collapse]');
+  if(collapseBtn){ var win = collapseBtn.closest('.win'); if(win) win.classList.toggle('collapsed'); return; }
+});
+
+document.getElementById('calPrev').addEventListener('click', function(){
+  calState.month--; if(calState.month<0){calState.month=11; calState.year--;}
+  calState.selected=null; renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', function(){
+  calState.month++; if(calState.month>11){calState.month=0; calState.year++;}
+  calState.selected=null; renderCalendar();
+});
+
+document.getElementById('musicBtn').addEventListener('click', function(){
+  var widget = document.getElementById('musicWidget');
+  var on = widget.classList.toggle('playing');
+  document.getElementById('musicBtn').textContent = on ? '❚❚' : '▶';
+});
+document.getElementById('musicPrev').addEventListener('click', function(){
+  musicIndex = (musicIndex-1+PLAYLIST.length)%PLAYLIST.length; renderMusic();
+  state.prefs.musicIndex = musicIndex; Store.save('prefs', state.prefs);
+});
+document.getElementById('musicNext').addEventListener('click', function(){
+  musicIndex = (musicIndex+1)%PLAYLIST.length; renderMusic();
+  state.prefs.musicIndex = musicIndex; Store.save('prefs', state.prefs);
+});
+
+/* =================================================================
+   REDUCE MOTION SWITCH
+================================================================== */
+var motionSwitch = document.getElementById('motionSwitch');
+function setReduceMotion(on){
+  document.documentElement.classList.toggle('reduce-motion', on);
+  motionSwitch.classList.toggle('on', on);
+  motionSwitch.setAttribute('aria-checked', on?'true':'false');
+}
+setReduceMotion(reduceMotionPref);
+motionSwitch.addEventListener('click', function(){ setReduceMotion(!document.documentElement.classList.contains('reduce-motion')); });
+
+/* =================================================================
+   CUSTOM CURSOR RETICLE
+================================================================== */
+var reticle = document.getElementById('reticle');
+if(pointerFine && !reduceMotionPref){
+  var rx=0, ry=0, tx=0, ty=0;
+  window.addEventListener('mousemove', function(e){ tx=e.clientX; ty=e.clientY; });
+  (function loop(){ rx+=(tx-rx)*0.18; ry+=(ty-ry)*0.18; reticle.style.left=rx+'px'; reticle.style.top=ry+'px'; requestAnimationFrame(loop); })();
+} else { reticle.style.display='none'; }
+
+/* =================================================================
+   GSAP SCROLL REVEALS (with no-CDN fallback)
+================================================================== */
+var GSAP_OK = (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined');
+if(GSAP_OK){
+  try{
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('[data-reveal]').forEach(function(el){
+      gsap.fromTo(el, {autoAlpha:0, y:36}, {autoAlpha:1, y:0, duration:0.8, ease:'power2.out', scrollTrigger:{trigger:el, start:'top 88%'}});
+    });
+  }catch(e){ GSAP_OK=false; console.warn('GSAP init failed, using fallback.', e); }
+}
+if(!GSAP_OK){
+  document.querySelectorAll('[data-reveal]').forEach(function(el){ el.style.visibility='visible'; el.style.opacity='1'; el.style.transform='none'; });
+}
+
+var hudSection = document.getElementById('hudSection');
+var sections = document.querySelectorAll('.zone[data-label]');
+if('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting) hudSection.textContent = en.target.dataset.label; });
+  }, {threshold:0.5});
+  sections.forEach(function(s){ io.observe(s); });
+}
+
+var hudBar = document.getElementById('hudBar');
+var hudDepth = document.getElementById('hudDepth');
+var progress = 0;
+function applyProgress(p){
+  progress = p;
+  hudBar.style.width = (progress*100)+'%';
+  hudDepth.textContent = Math.round(progress*100)+'%';
+  if(window.__updateWorld) window.__updateWorld(progress);
+}
+if(GSAP_OK){
+  try{
+    ScrollTrigger.create({
+      trigger: document.body, start:'top top', end:'bottom bottom', scrub:0.6,
+      onUpdate:function(self){ applyProgress(self.progress); }
+    });
+  }catch(e){ GSAP_OK=false; console.warn('ScrollTrigger init failed, using native scroll fallback.', e); }
+}
+if(!GSAP_OK){
+  var ticking=false;
+  function computeProgress(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    return max>0 ? Math.min(1, Math.max(0, window.scrollY/max)) : 0;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ requestAnimationFrame(function(){ applyProgress(computeProgress()); ticking=false; }); ticking=true; }
+  }, {passive:true});
+  applyProgress(computeProgress());
+}
+
+/* =================================================================
+   THREE.JS WORLD — core, grid, frames, particles, towers, portal,
+   and the procedural pixel Earth.
+================================================================== */
+function hasWebGL(){
+  try{ var c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }
+  catch(e){ return false; }
+}
+function smoothstep(e0,e1,x){ var t=Math.min(1,Math.max(0,(x-e0)/(e1-e0))); return t*t*(3-2*t); }
+
+if(!hasWebGL() || typeof THREE === 'undefined'){
+  document.documentElement.classList.add('no-webgl');
+} else {
+  try{ initWorld(); }
+  catch(err){ document.documentElement.classList.add('no-webgl'); console.warn('WebGL world failed, falling back to CSS background.', err); }
+}
+
+function initWorld(){
+  var canvas = document.getElementById('webgl-bg');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050706, 0.028);
+
+  var camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 500);
+  camera.position.set(0, 1, 20);
+
+  var ACCENT = 0x3dffa0;
+  var WHITE = 0xe9f2ec;
+  var worldObjects = [];
+
+  function registerSingle(mesh, revealDepth, baseOpacity, revealWidth){
+    mesh.material.transparent = true; mesh.material.opacity = 0;
+    worldObjects.push({mesh:mesh, group:false, revealDepth:revealDepth, baseOpacity:baseOpacity, revealWidth:revealWidth||0.16});
+    scene.add(mesh); return mesh;
+  }
+  function registerGroup(group, revealDepth, baseOpacity, revealWidth){
+    group.children.forEach(function(c){ if(c.material){ c.material.transparent=true; c.material.opacity=0; } });
+    worldObjects.push({mesh:group, group:true, revealDepth:revealDepth, baseOpacity:baseOpacity, revealWidth:revealWidth||0.16});
+    scene.add(group); return group;
+  }
+
+  /* core cluster */
+  var coreGroup = new THREE.Group();
+  var CORE_N=46, CORE_R=2.6;
+  for(var i=0;i<CORE_N;i++){
+    var phi = Math.acos(-1+(2*i)/CORE_N);
+    var theta = Math.sqrt(CORE_N*Math.PI)*phi;
+    var x=CORE_R*Math.cos(theta)*Math.sin(phi), y=CORE_R*Math.sin(theta)*Math.sin(phi), z=CORE_R*Math.cos(phi);
+    var box = new THREE.Mesh(new THREE.BoxGeometry(0.17,0.17,0.17), new THREE.MeshBasicMaterial({color:i%6===0?WHITE:ACCENT, wireframe:(i%3===0)}));
+    box.position.set(x,y,z); coreGroup.add(box);
+  }
+  registerGroup(coreGroup, 0.0, 0.92, 0.1);
+
+  /* floor grid tunnel */
+  [-2,-30,-58,-86,-114,-142].forEach(function(z, idx){
+    var gh = new THREE.GridHelper(70, 26, ACCENT, 0x1a2a22);
+    gh.position.set(0,-6,z);
+    gh.material.transparent = true; gh.material.opacity = 0;
+    worldObjects.push({mesh:gh, group:false, revealDepth:0.02+idx*0.15, baseOpacity:0.28, revealWidth:0.18});
+    scene.add(gh);
+  });
+
+  /* floating panel frames */
+  var frameSeeds = [];
+  for(var f=0; f<10; f++){
+    var w=1.6+Math.random()*1.6, h=1.0+Math.random()*1.0;
+    var frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w,h)), new THREE.LineBasicMaterial({color:ACCENT}));
+    var z=-6-f*14-Math.random()*6, x=(Math.random()-0.5)*16, y=(Math.random()-0.5)*8+1;
+    frame.position.set(x,y,z); frame.rotation.z=(Math.random()-0.5)*0.3;
+    frame.userData.baseY=y; frame.userData.seed=Math.random()*10;
+    frameSeeds.push(frame);
+    registerSingle(frame, 0.04+f*0.085, 0.55, 0.14);
+  }
+
+  /* particle fields */
+  function makeParticles(count, zMin, zMax, size){
+    var positions = new Float32Array(count*3);
+    for(var p=0;p<count;p++){
+      positions[p*3+0]=(Math.random()-0.5)*46;
+      positions[p*3+1]=(Math.random()-0.5)*22+4;
+      positions[p*3+2]=-(zMin+Math.random()*(zMax-zMin));
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    return new THREE.Points(geo, new THREE.PointsMaterial({color:ACCENT, size:size, transparent:true, opacity:0, sizeAttenuation:true}));
+  }
+  registerSingle(makeParticles(260,0,60,0.11), 0.02, 0.28, 0.2);
+  registerSingle(makeParticles(600,60,190,0.13), 0.36, 0.55, 0.22);
+
+  /* data towers */
+  [-78,-112,-148].forEach(function(z, idx){
+    var xs=[-9,8,-6];
+    var tower = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.2,38,1.2)), new THREE.LineBasicMaterial({color:ACCENT}));
+    tower.position.set(xs[idx], 13, z);
+    registerSingle(tower, 0.5+idx*0.11, 0.7, 0.16);
+  });
+
+  /* portal */
+  var portal = new THREE.Mesh(new THREE.TorusGeometry(9,0.32,10,48), new THREE.MeshBasicMaterial({color:ACCENT}));
+  portal.position.set(0,2,-168);
+  registerSingle(portal, 0.82, 1.0, 0.18);
+
+  /* ---- procedural pixel earth ---- */
+  var earthGroup = new THREE.Group();
+  var EW=96, EH=48;
+  var ecanvas = document.createElement('canvas');
+  ecanvas.width=EW; ecanvas.height=EH;
+  var ectx = ecanvas.getContext('2d');
+  for(var ey=0; ey<EH; ey++){
+    for(var ex=0; ex<EW; ex++){
+      var u=ex/EW, v=ey/EH;
+      var lon=u*Math.PI*2, lat=(v-0.5)*Math.PI;
+      var nval = Math.sin(lon*2.1+1.3)*Math.cos(lat*2.6+0.4)
+               + Math.sin(lon*4.3+3.1+lat*3.0)*0.5
+               + Math.sin(lon*1.1-2.0)*Math.cos(lat*1.7+1.0)*0.7
+               + Math.cos(lon*6.0+lat*5.0+2.0)*0.25;
+      var isPole = v<0.07 || v>0.93;
+      var color;
+      if(isPole) color='#c9d6ce';
+      else if(nval>0.55) color='#55665c';
+      else if(nval>0.15) color='#3a4a41';
+      else if(nval>-0.15) color='#16261f';
+      else if(nval>-0.55) color='#0d1a15';
+      else color='#050a08';
+      if(!isPole && nval>0.15){
+        var hash = Math.abs(Math.sin(ex*12.9898+ey*78.233)*43758.5453);
+        hash = hash - Math.floor(hash);
+        if(hash>0.965) color='#3dffa0';
+      }
+      ectx.fillStyle = color;
+      ectx.fillRect(ex,ey,1,1);
+    }
+  }
+  var earthTexture = new THREE.CanvasTexture(ecanvas);
+  earthTexture.magFilter = THREE.NearestFilter;
+  earthTexture.minFilter = THREE.NearestFilter;
+  earthTexture.generateMipmaps = false;
+  earthTexture.wrapS = THREE.RepeatWrapping;
+
+  var earthMat = new THREE.MeshBasicMaterial({map:earthTexture, transparent:true, opacity:0});
+  var earthMesh = new THREE.Mesh(new THREE.SphereGeometry(9, 28, 16), earthMat);
+  earthGroup.add(earthMesh);
+
+  var earthShellMat = new THREE.LineBasicMaterial({color:ACCENT, transparent:true, opacity:0});
+  var earthShell = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(10.4, 1)), earthShellMat);
+  earthGroup.add(earthShell);
+
+  var dpPositions = [];
+  for(var dpI=0; dpI<12; dpI++){
+    var dpLon=(dpI/12)*Math.PI*2+dpI*0.37, dpLat=Math.sin(dpI*2.1)*0.6, dpR=9.15;
+    dpPositions.push(dpR*Math.cos(dpLat)*Math.cos(dpLon), dpR*Math.sin(dpLat), dpR*Math.cos(dpLat)*Math.sin(dpLon));
+  }
+  var dpGeo = new THREE.BufferGeometry();
+  dpGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dpPositions), 3));
+  var earthDataPoints = new THREE.Points(dpGeo, new THREE.PointsMaterial({color:WHITE, size:0.28, transparent:true, opacity:0}));
+  earthGroup.add(earthDataPoints);
+
+  earthGroup.position.set(12, 3, -100);
+  scene.add(earthGroup);
+  worldObjects.push({mesh:earthMesh, group:false, revealDepth:0.42, baseOpacity:1.0, revealWidth:0.2});
+  worldObjects.push({mesh:earthShell, group:false, revealDepth:0.44, baseOpacity:0.5, revealWidth:0.2});
+  worldObjects.push({mesh:earthDataPoints, group:false, revealDepth:0.5, baseOpacity:0.8, revealWidth:0.2});
+
+  /* ---------------- render loop ---------------- */
+  var clock = new THREE.Clock();
+  var mouse = {x:0,y:0};
+  var camPar = {x:0,y:0};
+  var camBaseZ = 20, camBaseY = 1;
+  var earthSpin = 0;
+
+  if(pointerFine){
+    window.addEventListener('mousemove', function(e){
+      mouse.x = (e.clientX/window.innerWidth - 0.5)*2;
+      mouse.y = (e.clientY/window.innerHeight - 0.5)*2;
+    });
+  }
+
+  function updateWorld(p){
+    var reduced = document.documentElement.classList.contains('reduce-motion');
+    var e = p*p*(3-2*p);
+    camBaseZ = reduced ? 20 : THREE.MathUtils.lerp(20, -150, e);
+    camBaseY = reduced ? 1 : THREE.MathUtils.lerp(1, 4.5, e);
+    worldObjects.forEach(function(o){
+      var k = smoothstep(o.revealDepth-o.revealWidth, o.revealDepth, p);
+      var val = o.baseOpacity*k;
+      if(o.group){ o.mesh.children.forEach(function(c){ if(c.material) c.material.opacity = val; }); }
+      else{ o.mesh.material.opacity = val; }
+      o.mesh.visible = k>0.01;
+    });
+  }
+  window.__updateWorld = updateWorld;
+  updateWorld(0);
+
+  function animate(){
+    requestAnimationFrame(animate);
+    var reduced = document.documentElement.classList.contains('reduce-motion');
+    var dt = clock.getDelta();
+    var t = clock.elapsedTime;
+
+    if(!reduced){
+      coreGroup.rotation.y += dt*0.14;
+      coreGroup.rotation.x += dt*0.05;
+      portal.rotation.z += dt*0.12;
+      earthSpin += dt*0.045;
+      frameSeeds.forEach(function(fr){ fr.position.y = fr.userData.baseY + Math.sin(t*0.6+fr.userData.seed)*0.14; });
+    }
+    earthGroup.rotation.y = earthSpin + (reduced?0:progress*0.5);
+
+    var targetX = (!reduced && pointerFine) ? mouse.x*1.3 : 0;
+    var targetY = (!reduced && pointerFine) ? -mouse.y*0.7 : 0;
+    camPar.x += (targetX-camPar.x)*0.04;
+    camPar.y += (targetY-camPar.y)*0.04;
+
+    camera.position.x = camPar.x;
+    camera.position.y = camBaseY + camPar.y + (reduced?0:Math.sin(t*0.35)*0.3);
+    camera.position.z = camBaseZ;
+    camera.lookAt(camPar.x*0.5, camBaseY*0.4, camera.position.z-42);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', function(){
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+/* =================================================================
+   BOOT SEQUENCE — boot loader covers async data load, then shows
+   either the dashboard (already logged in) or the login gate.
+================================================================== */
+async function initData(){
+  state.tasks = await Store.load('tasks', []);
+  state.notes = await Store.load('notes', []);
+  state.goals = await Store.load('goals', []);
+  state.projects = await Store.load('projects', []);
+  state.quicklinks = await Store.load('quicklinks', DEFAULT_QUICKLINKS.slice());
+  state.profile = await Store.load('profile', Object.assign({}, DEFAULT_PROFILE));
+  state.mood = await Store.load('mood', {current:'', updatedAt:null, history:[]});
+  state.activity = await Store.load('activity', []);
+  state.prefs = await Store.load('prefs', {weatherCity:null, musicIndex:0});
+  state.auth = await Store.load('auth', {loggedIn:false});
+  musicIndex = state.prefs.musicIndex || 0;
+  renderAll();
+  initWeather();
+}
+var dataReadyPromise = initData();
+
+var boot = document.getElementById('boot');
+var bootDone = false;
+function completeBoot(){
+  if(bootDone) return; bootDone = true;
+  boot.classList.add('hidden');
+  showGate(!(state.auth && state.auth.loggedIn));
+}
+boot.addEventListener('click', completeBoot);
+Promise.all([new Promise(function(r){ setTimeout(r,1200); }), dataReadyPromise]).then(completeBoot);
+
+})();
+</script>
+
+
+</body></html>
